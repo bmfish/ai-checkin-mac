@@ -105,10 +105,18 @@ struct ContentView: View {
         let signed = row?.signed ?? false
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Text(account.displayName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Palette.fg)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(account.displayName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Palette.fg)
+                        .lineLimit(1)
+                    if account.platform == .trae, account.displayName != account.uid {
+                        Text(account.uid)
+                            .font(.system(size: 10))
+                            .foregroundColor(Palette.dim)
+                            .lineLimit(1)
+                    }
+                }
                 Spacer(minLength: 8)
                 Text(account.platform.label)
                     .font(.system(size: 11))

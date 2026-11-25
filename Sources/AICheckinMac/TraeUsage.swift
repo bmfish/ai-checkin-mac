@@ -10,6 +10,7 @@ import Foundation
 struct AccountUsage {
     let uid: String
     let app: String
+    var name: String = ""
     var ok: Bool = false
     var sessions: Int = 0
     var credits: Double = 0
@@ -24,6 +25,7 @@ enum TraeUsage {
 
     static let usagePath = "/trae/api/v1/pay/query_user_usage_group_by_session"
     static let entPath = "/trae/api/v2/pay/ide_user_ent_usage"
+    static let userInfoPath = "/cloudide/api/v3/trae/GetUserInfo"
     static let pageSize = 20
     static let maxPages = 50
 
@@ -46,6 +48,11 @@ enum TraeUsage {
                 }
                 jwt = refreshed.jwt
             }
+            let name = fetchScreenName(jwt: jwt)
+            item.name = name
+            if !name.isEmpty {
+                UserDefaults.standard.set(name, forKey: "trae_name_\(account.uid)")
+            }
             let usage = fetchUsage(jwt: jwt, from: start, to: end)
             let ent = fetchEnt(jwt: jwt)
             item.ok = usage.error == nil
@@ -58,6 +65,23 @@ enum TraeUsage {
             item.balance = ent.balance
             return item
         }
+    }
+
+    // MARK: 账号昵称
+
+    /// GetUserInfo.ScreenName；鉴权头是 X-Cloudide-Token。失败返回空，不影响用量。
+    static func fetchScreenName(jwt: String) -> String {
+        guard !jwt.isEmpty else { return "" }
+        let resp = HTTP.postText(TraeCheckin.apiBase + userInfoPath, headers: [
+            "X-Cloudide-Token": jwt,
+            "content-type": "application/json",
+            "accept": "*/*",
+        ], body: "{}", timeout: 10)
+        guard resp.status == 200, let data = resp.data,
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = obj["Result"] as? [String: Any],
+              let name = result["ScreenName"] as? String else { return "" }
+        return name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // MARK: 会话用量

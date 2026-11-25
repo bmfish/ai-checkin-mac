@@ -381,7 +381,7 @@ enum AccountDiscovery {
                 id: "\(PlatformKind.trae.prefix):\(cred.uid)",
                 platform: .trae,
                 uid: cred.uid,
-                displayName: cred.uid,
+                displayName: cachedTraeName(cred.uid),
                 source: cred.sourceApp
             ))
         }
@@ -409,5 +409,12 @@ enum AccountDiscovery {
         }
 
         return accounts
+    }
+
+    /// 上次拉到的 Trae 昵称；没有则回落 uid。
+    private static func cachedTraeName(_ uid: String) -> String {
+        let name = (UserDefaults.standard.string(forKey: "trae_name_\(uid)") ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? uid : name
     }
 }

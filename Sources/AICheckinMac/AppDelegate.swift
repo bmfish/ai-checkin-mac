@@ -161,6 +161,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func scheduledTick() {
+        // 跨天：日期文字与卡片数据都属于前一天，立即失效重读（不算定时刷新）
+        let today = UsageModel.dateText()
+        if today != model.todayText {
+            model.todayText = today
+            model.refresh()
+        }
         let hour = model.startHour
         workQueue.async { [weak self] in
             guard let self else { return }

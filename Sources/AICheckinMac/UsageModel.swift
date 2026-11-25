@@ -15,6 +15,7 @@ final class UsageModel: ObservableObject {
     @Published var startHour: Int
     @Published var autostart: Bool
     @Published var windowHeight: CGFloat = 430
+    @Published var todayText = UsageModel.dateText()
 
     private let workQueue = DispatchQueue(label: "ai-checkin.work", qos: .utility)
     private let defaults = UserDefaults.standard
@@ -68,11 +69,13 @@ final class UsageModel: ObservableObject {
             guard let self else { return }
             let found = AccountDiscovery.discover()
             var rows: [PlatformUsage] = []
+            var traeNames: [String: String] = [:]
 
             // Trae：今日消耗 / 会话数 / 余额，签到状态单独查一次
             let traeCreds = TraeClientCredentials.discover()
             if !traeCreds.isEmpty {
                 for item in TraeUsage.today() {
+                    if !item.name.isEmpty { traeNames[item.uid] = item.name }
                     var row = PlatformUsage(id: "\(PlatformKind.trae.prefix):\(item.uid)")
                     row.ok = item.ok
                     row.message = item.message
@@ -121,7 +124,13 @@ final class UsageModel: ObservableObject {
                 rows.append(row)
             }
 
-            let accounts = found
+            let accounts = found.map { account -> PlatformAccount in
+                guard account.platform == .trae,
+                      let name = traeNames[account.uid], !name.isEmpty else { return account }
+                return PlatformAccount(id: account.id, platform: account.platform,
+                                       uid: account.uid, displayName: name,
+                                       source: account.source)
+            }
             let updated = Self.timeText()
             DispatchQueue.main.async {
                 self.accounts = accounts
