@@ -14,7 +14,7 @@ final class UsageModel: ObservableObject {
     @Published var tip = ""
     @Published var startHour: Int
     @Published var autostart: Bool
-    @Published var windowHeight: CGFloat = 430
+    @Published var windowHeight: CGFloat = 390
     @Published var todayText = UsageModel.dateText()
 
     private let workQueue = DispatchQueue(label: "ai-checkin.work", qos: .utility)
@@ -202,11 +202,11 @@ final class UsageModel: ObservableObject {
     private func preferredHeight() -> CGFloat {
         let cards = accounts.reduce(CGFloat(0)) { sum, account in
             switch account.platform {
-            case .trae, .workBuddy: return sum + 176
-            case .qoder: return sum + 118
+            case .trae, .workBuddy: return sum + 156
+            case .qoder: return sum + 104
             }
         }
-        let height = 100 + max(cards, 118) + 120
-        return min(720, max(340, height))
+        let height = 88 + max(cards, 104) + 106
+        return min(640, max(300, height))
     }
 }

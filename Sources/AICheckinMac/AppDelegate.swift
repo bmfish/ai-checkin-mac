@@ -18,9 +18,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var cancellables: Set<AnyCancellable> = []
     private var contextMenu: NSMenu?
+    private var resignActiveObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        // 恢复上次选择的外观（默认跟随系统）
+        if let saved = UserDefaults.standard.string(forKey: "appearanceMode"),
+           let mode = AppearanceMode(rawValue: saved) {
+            mode.apply()
+        }
         setupStatusItem()
         setupWindow()
         observeModel()
@@ -33,6 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         timer?.invalidate()
+        if let resignActiveObserver {
+            NotificationCenter.default.removeObserver(resignActiveObserver)
+        }
     }
 
     // MARK: 状态栏
@@ -81,18 +90,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupWindow() {
         let hosting = NSHostingView(rootView: ContentView(model: model))
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: model.windowHeight),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: model.windowHeight),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false)
         window.title = "AI 签到"
-        window.appearance = NSAppearance(named: .darkAqua)
-        window.backgroundColor = NSColor(red: 10 / 255, green: 14 / 255, blue: 11 / 255, alpha: 1)
+        // 跟随系统浅色 / 深色外观；标题栏透出窗口底色
+        window.backgroundColor = Palette.titlebar
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.contentView = hosting
         window.center()
         self.window = window
+        // 点窗口以外的空白处（切到其他 App / 桌面）时自动收起
+        resignActiveObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: NSApp,
+            queue: .main
+        ) { [weak self] _ in
+            self?.window?.orderOut(nil)
+        }
     }
 
     private func observeModel() {
